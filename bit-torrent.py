@@ -138,7 +138,7 @@ def parseURL(scrapeURL: str):
         else:
             maxRetries -= 1
             if maxRetries == 0:
-                return
+                return -1
             print("\nRetrying")
 
 if __name__ ==  "__main__" :
@@ -159,8 +159,8 @@ if __name__ ==  "__main__" :
         URL = urlparse(scrapeURL)
         torrentFiles = []
         
-        parseURL(scrapeURL)    
-        fileOutput(URL)
+        if parseURL(scrapeURL) != -1:
+            fileOutput(URL)
         
     elif args.trackerFile != None:
         try:
@@ -191,8 +191,8 @@ if __name__ ==  "__main__" :
                 URL = urlparse(scrapeURL)
                 torrentFiles = []
 
-                parseURL(scrapeURL)
-                fileOutput(URL)
+                if parseURL(scrapeURL) != -1:
+                    fileOutput(URL)
                 
             except Exception as error:
                 print("Failed to get scrape info.", type(error).__name__)
