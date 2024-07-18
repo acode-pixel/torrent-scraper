@@ -71,7 +71,7 @@ if __name__ ==  "__main__" :
 
             
         fields = ["filename", "info_hash", "seeders", "leechers", "downloads"]
-        filename = f"{time.strftime("%H-%M-%S")}-{URL.hostname}"
+        filename = f"{time.strftime('%H-%M-%S')}-{URL.hostname}"
 
         if args.xlsx:
             # xlsx output
