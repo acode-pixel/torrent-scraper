@@ -24,8 +24,12 @@ def getScapeData(scrapeURL: str):
             if args.verbose:
                 print(f"RAW_CONTENT: {r.content.decode()}")
                 print(f"SCRAPE_CONTENT: {bencodepy.decode(r.content)}")
+                
             
             scrapeData = bencodepy.decode(r.content)
+            
+            
+            
             file_hashes = list(scrapeData[b"files"].keys())
             file_stats = list(scrapeData[b"files"].values())
             hash_index = 0
@@ -50,24 +54,26 @@ def getScapeData(scrapeURL: str):
                 print(i)
 
             print(f"Total files: {len(torrentFiles)}")
+            r.close()
+            return 0
 
         except Exception as error:
             if type(error).__name__ == "HTTPError":
-                getScapeData(scrapeURL.replace("http://", "https://"))
-                exit()
+                return getScapeData(scrapeURL.replace("http://", "https://"))
+                
                 
             print("Failed to get scrape info.", type(error).__name__)
-            exit()
+            return -1
     elif URL.scheme == "udp":
         try:
-            getScapeData(scrapeURL.replace("udp://", "http://"))
+            return getScapeData(scrapeURL.replace("udp://", "http://"))
             
         except requests.exceptions.RequestException as error:
             print("Failed to get scrape info.", type(error).__name__)
-            exit()
+            return -1
     else:
         print(f"Unknown protocol {URL.scheme}")
-        exit()    
+        return -1 
 
 def fileOutput(URL):
     fields = ["filename", "info_hash", "seeders", "leechers", "downloads"]
@@ -115,8 +121,10 @@ if __name__ ==  "__main__" :
     parser.add_argument("--csv", action="store_true", help="store output in csv file")
     parser.add_argument("--xlsx", action="store_true", help="store output in xlsx file")
     parser.add_argument("-v", "--verbose", action="store_true", help="Output verbose")
+    parser.add_argument("--max-retries", action="store", dest="maxRetries", default=5, help="Maximum amount of retries")
 
     args = parser.parse_args()
+    maxRetries = args.maxRetries
     
     if args.announce_uri != None:
         scrapeURL = args.announce_uri.replace("announce", "scrape")
@@ -124,7 +132,15 @@ if __name__ ==  "__main__" :
         URL = urlparse(scrapeURL)
         torrentFiles = []
 
-        getScapeData(scrapeURL)
+        while True:
+            if getScapeData(scrapeURL) == 0:
+                break
+            else:
+                maxRetries -= 1
+                if maxRetries == 0:
+                    exit()
+                print("\nRetrying")
+            
         fileOutput(URL)
         
         
