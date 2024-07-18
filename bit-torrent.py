@@ -28,8 +28,6 @@ def getScapeData(scrapeURL: str):
             
             scrapeData = bencodepy.decode(r.content)
             
-            
-            
             file_hashes = list(scrapeData[b"files"].keys())
             file_stats = list(scrapeData[b"files"].values())
             hash_index = 0
@@ -55,10 +53,11 @@ def getScapeData(scrapeURL: str):
 
             print(f"Total files: {len(torrentFiles)}")
             r.close()
-            return 0
+            return
 
         except Exception as error:
-            if type(error).__name__ == "HTTPError":
+            if type(error).__name__ == "HTTPError" and URL.scheme == "http":
+                print("Failed to get scrape info.", type(error).__name__, f"HTTP status code {r.status_code}")
                 return getScapeData(scrapeURL.replace("http://", "https://"))
                 
                 
@@ -130,6 +129,17 @@ def fileOutput(URL):
         for i in torrentFiles:
             f.write(i.info_hash+"\n")
         f.close()
+        
+def parseURL(scrapeURL: str):
+    maxRetries = args.maxRetries
+    while True:
+        if getScapeData(scrapeURL) == 0:
+            break
+        else:
+            maxRetries -= 1
+            if maxRetries == 0:
+                return
+            print("\nRetrying")
 
 if __name__ ==  "__main__" :
     parser = argparse.ArgumentParser(description="torrent parser")
@@ -138,28 +148,37 @@ if __name__ ==  "__main__" :
     parser.add_argument("--csv", action="store_true", help="store output in csv file")
     parser.add_argument("--xlsx", action="store_true", help="store output in xlsx file")
     parser.add_argument("-v", "--verbose", action="store_true", help="Output verbose")
-    parser.add_argument("--max-retries", action="store", dest="maxRetries", default=5, help="Maximum amount of retries")
+    parser.add_argument("--max-retries", action="store", dest="maxRetries", default=5, type=int, help="Maximum amount of retries")
     parser.add_argument("-oi", "--out-infoHashes", action="store", dest="storeInfoHashes", help="Output info hashes to designated file")
+    parser.add_argument("-in", "--input-tacker", dest="trackerFile", help="Input a list of trackers in a file")
     args = parser.parse_args()
-    maxRetries = args.maxRetries
     
     if args.announce_uri != None:
         scrapeURL = args.announce_uri.replace("announce", "scrape")
         
         URL = urlparse(scrapeURL)
         torrentFiles = []
-
-        while True:
-            if getScapeData(scrapeURL) == 0:
-                break
-            else:
-                maxRetries -= 1
-                if maxRetries == 0:
-                    exit()
-                print("\nRetrying")
-            
+        
+        parseURL(scrapeURL)    
         fileOutput(URL)
         
+    elif args.trackerFile != None:
+        try:
+            f = open(args.trackerFile, "r")
+            while True:
+                announceURL = f.readline()
+                if announceURL == '\n':
+                    continue
+                elif announceURL == '':
+                    break
+                parseURL(announceURL.replace("announce", "scrape"))
+            f.close()
+                
+        except Exception as error:
+            print(f"Failed parsing tracker file {type(error).__name__}")
+            f.close()
+            exit()
+            
         
     elif args.torrent_file != None:
         with open(args.torrent_file, "rb") as f:
@@ -172,7 +191,7 @@ if __name__ ==  "__main__" :
                 URL = urlparse(scrapeURL)
                 torrentFiles = []
 
-                getScapeData(scrapeURL)
+                parseURL(scrapeURL)
                 fileOutput(URL)
                 
             except Exception as error:
