@@ -65,6 +65,11 @@ def getScapeData(scrapeURL: str):
             print("Failed to get scrape info.", type(error).__name__)
             return -1
     elif URL.scheme == "udp":
+        
+        """try:
+            
+        except:"""
+            
         try:
             return getScapeData(scrapeURL.replace("udp://", "http://"))
             
@@ -113,6 +118,18 @@ def fileOutput(URL):
                 csvwriter.writerow([i.name, i.info_hash, i.complete, i.incomplete, i.downloaded])
             csvwriter.writerow([f"Total files: {len(torrentFiles)}"])
             f.close()
+            
+    elif args.storeInfoHashes != None:
+        
+        try:
+            f = open(args.storeInfoHashes, "w")
+        except Exception as error:
+            print(f"Failed creating outFile {args.storeInfoHashes}.", type(error).__name__)
+            return
+        
+        for i in torrentFiles:
+            f.write(i.info_hash+"\n")
+        f.close()
 
 if __name__ ==  "__main__" :
     parser = argparse.ArgumentParser(description="torrent parser")
@@ -122,7 +139,7 @@ if __name__ ==  "__main__" :
     parser.add_argument("--xlsx", action="store_true", help="store output in xlsx file")
     parser.add_argument("-v", "--verbose", action="store_true", help="Output verbose")
     parser.add_argument("--max-retries", action="store", dest="maxRetries", default=5, help="Maximum amount of retries")
-
+    parser.add_argument("-oi", "--out-infoHashes", action="store", dest="storeInfoHashes", help="Output info hashes to designated file")
     args = parser.parse_args()
     maxRetries = args.maxRetries
     
