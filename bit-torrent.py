@@ -53,7 +53,7 @@ def getScapeData(scrapeURL: str):
 
             print(f"Total files: {len(torrentFiles)}")
             r.close()
-            return
+            return 0
 
         except Exception as error:
             if type(error).__name__ == "HTTPError" and URL.scheme == "http":
